@@ -163,7 +163,13 @@ ggplot() +
 
 #Diff
 
-diff <- mu_low - mu_high
+diff_mu <- mu_low - mu_high
+sigma2_add <- sigma2_low + sigma2_high
 
-quantile(diff, probs = c(0.1))
+quantile(diff_mu, probs = c(0.1))
+
+diff_pull <- rnorm(1001, mean = diff_mu, sd = sqrt(sigma2_add))
+
+ggplot() +
+  geom_density(mapping = aes(x = diff_pull))
 
