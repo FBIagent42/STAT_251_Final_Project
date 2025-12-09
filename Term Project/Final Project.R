@@ -3,14 +3,6 @@ library(tidyverse)
 people <- read_csv("Term Project/hormone-diversity-individual.csv")
 team <- read_csv("Term Project/hormone-diversity-teams.csv")
 
-full <- people %>%
-  full_join(team, by = "team.id")
-
-mean_by_team <- people %>%
-  group_by(team.id) %>%
-  summarize(mean_test = mean(Testosterone, na.rm = TRUE), .groups = "drop")
-
-
 sorted <- team %>%
   left_join(mean_by_team, by = "team.id")
 
@@ -30,34 +22,43 @@ people_cleaned <- people %>%
 
 people_cleaned %>%
   ggplot(aes(x = final.performance, color = Testosterone_level)) +
-  geom_density()
+  geom_density() +
+  labs(title = "Distribution of Final Preformance by Testosterone Level",
+       x = 'Final Preformance',
+       y = 'Density',
+       color = 'Testosterone Level')
+ggsave('final_pref_by_level.png')
 
 people_cleaned %>%
   ggplot(aes(x = Testosterone_level)) +
-  geom_bar()
-
-people_cleaned %>%
-  filter(Gender == 'Male') %>%
-  summary(mean = mean(Testosterone),
-          sd = sd(Testosterone))
-
+  geom_bar() +
+  labs(title = 'Distribution of Testosterone Level',
+       x = 'Testosterone Level',
+       y = 'Count')
+ggsave('test_level_count.png')
 
 people_cleaned %>%
   summarize(mean = mean(final.performance, na.rm = T),
             sd = sd(final.performance, na.rm = T))
 
-
-
 people_cleaned %>%
   ggplot(aes(x = final.performance)) +
-  geom_histogram()
+  geom_density() +
+  labs(title = 'Distribution of all Final Prefomances',
+       x = 'Final Preformance',
+       y = 'Density')
+ggsave('dist_final_pref.png')
 
 x <- seq(-3, 1.5, by = 0.01)
 
 ggplot() +
   geom_line(mapping = aes(x = x, y = dnorm(x, -1, .5), color = "high")) +
-  geom_line(mapping = aes(x = x, y = dnorm(x, 0, .5), color = "low"))
-
+  geom_line(mapping = aes(x = x, y = dnorm(x, 0, .5), color = "low")) +
+  labs(title = 'Prior Distributions of mu',
+       x = 'mu',
+       y = 'Density',
+       color = 'Prior')
+ggsave('prior_dist.png')
 
 
 library(invgamma)
@@ -109,17 +110,32 @@ for (j in 2:(J+1)){
   sigma2_low[j] <- update.var(mu_low[j], y_low, a_low, b_low)
 }
 
+mu_low <- mu_low[-c(1:50)]
+sigma2_low <- sigma2_low[-c(1:50)]
 
 ggplot() +
-  geom_line(mapping = aes(x = c(1:length(mu_low)), y = mu_low))
+  geom_line(mapping = aes(x = c(1:length(mu_low)), y = mu_low)) +
+  labs(title = 'Trace Plot for mu_low',
+       x = 'Index',
+       y = 'mu_low')
+ggsave('trace_mu_low.png')
 
 ggplot() +
-  geom_line(mapping = aes(x = c(1:length(sigma2_low)), y = sigma2_low))
+  geom_line(mapping = aes(x = c(1:length(sigma2_low)), y = sigma2_low)) +
+  labs(title = 'Trace Plot for Sigma Squared Low',
+       x = 'Index',
+       y = 'Sigma Squared')
+ggsave('trace_sigma_low.png')
+  
 
-pull_low <- rnorm(1001, mean = mu_low, sd = sqrt(sigma2_low))
+pull_low <- rnorm(951, mean = mu_low, sd = sqrt(sigma2_low))
 
 ggplot() +
-  geom_density(mapping = aes(x = pull_low))
+  geom_density(mapping = aes(x = pull_low)) +
+  labs(title = 'Posterior Predictive Distribution of Final Preformance for Low Testosterone',
+       y = 'Final Preformance',
+       x = 'Density')
+ggsave('post_pred_low.png')
 
 #High
 
@@ -147,17 +163,31 @@ for (j in 2:(J+1)){
   sigma2_high[j] <- update.var(mu_high[j], y_high, a_high, b_high)
 }
 
+mu_high <- mu_high[-c(1:50)]
+sigma2_high <- sigma2_high[-c(1:50)]
 
 ggplot() +
-  geom_line(mapping = aes(x = c(1:length(mu_high)), y = mu_high))
+  geom_line(mapping = aes(x = c(1:length(mu_high)), y = mu_high)) +
+  labs(title = 'Trace Plot for mu_high',
+       x = 'Index',
+       y = 'mu_high')
+ggsave('trace_mu_high.png')
 
 ggplot() +
-  geom_line(mapping = aes(x = c(1:length(sigma2_high)), y = sigma2_high))
+  geom_line(mapping = aes(x = c(1:length(sigma2_high)), y = sigma2_high)) +
+  labs(title = 'Trace Plot for Sigma Squared High',
+       x = 'Index',
+       y = 'Sigma Squared')
+ggsave('trace_sigma_high.png')
 
-pull_high <- rnorm(1001, mean = mu_high, sd = sqrt(sigma2_high))
+pull_high <- rnorm(951, mean = mu_high, sd = sqrt(sigma2_high))
 
 ggplot() +
-  geom_density(mapping = aes(x = pull_high))
+  geom_density(mapping = aes(x = pull_high)) +
+  labs(title = 'Posterior Predictive Distribution of Final Preformance for High Testosterone',
+       y = 'Final Preformance',
+       x = 'Density')
+ggsave('post_pred_high.png')
 
 
 
@@ -166,10 +196,15 @@ ggplot() +
 diff_mu <- mu_low - mu_high
 sigma2_add <- sigma2_low + sigma2_high
 
-quantile(diff_mu, probs = c(0.1))
+quantile(diff_mu, probs = c(0.025, 0.975))
 
 diff_pull <- rnorm(1001, mean = diff_mu, sd = sqrt(sigma2_add))
 
 ggplot() +
-  geom_density(mapping = aes(x = diff_pull))
+  geom_density(mapping = aes(x = diff_pull)) +
+  labs(title = 'Posterior Predictive Distribution of Difference in Final 
+       Preformance for Low vs High Testosterone',
+       y = 'Final Preformance',
+       x = 'Density')
+ggsave('post_pred_diff.png')
 
